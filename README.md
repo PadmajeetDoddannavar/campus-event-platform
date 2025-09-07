@@ -101,3 +101,14 @@ More charts and analytics for admin.
 
 This is my simple understanding and approach. It may not be perfect but it covers the requirements.
 
+## Contact Me
+
+If you want to connect with me or check out my work:
+
+Email: padmajeetdoddannavar@gmail.com
+
+LinkedIn: https://www.linkedin.com/in/padmajeet-doddannavar
+
+GitHub: https://www.github.com/PadmajeetDoddannavar
+
+I am open to feedback and ideas ✌️
