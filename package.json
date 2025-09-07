@@ -1,0 +1,18 @@
+{
+  "name": "campus-event-management",
+  "version": "1.0.0",
+  "description": "Full-stack Campus Event Management Platform",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd backend && python app.py",
+    "frontend": "cd frontend && npm start",
+    "install-all": "npm install && cd frontend && npm install && cd ../backend && pip install -r requirements.txt"
+  },
+  "keywords": ["campus", "events", "management", "react", "flask"],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

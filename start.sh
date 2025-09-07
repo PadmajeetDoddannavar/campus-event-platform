@@ -1,0 +1,8 @@
+#!/bin/bash
+echo "Starting Campus Event Management Platform..."
+echo ""
+echo "Installing dependencies..."
+pip install -r requirements.txt
+echo ""
+echo "Starting the application..."
+python simple_backend_no_qr.py

@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Event Management Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div x-data="campusEvents()" x-init="init()">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <h1 class="text-xl font-bold text-gray-800">🎓 Campus Events</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <template x-if="!user">
+                            <button @click="showLogin = true" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                                Login
+                            </button>
+                        </template>
+                        <template x-if="user">
+                            <div class="flex items-center space-x-4">
+                                <span class="text-gray-700" x-text="user.name"></span>
+                                <button @click="logout()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                                    Logout
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Login Modal -->
+        <div x-show="showLogin" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white p-8 rounded-lg max-w-md w-full mx-4">
+                <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Login As</label>
+                    <select x-model="loginType" class="w-full p-2 border border-gray-300 rounded">
+                        <option value="admin">Admin</option>
+                        <option value="student">Student</option>
+                    </select>
+                </div>
+
+                <template x-if="loginType === 'admin'">
+                    <div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                            <input x-model="adminLogin.username" type="text" class="w-full p-2 border border-gray-300 rounded" placeholder="admin">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <input x-model="adminLogin.password" type="password" class="w-full p-2 border border-gray-300 rounded" placeholder="admin123">
+                        </div>
+                    </div>
+                </template>
+
+                <template x-if="loginType === 'student'">
+                    <div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input x-model="studentLogin.email" type="email" class="w-full p-2 border border-gray-300 rounded" placeholder="student@college.edu">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <input x-model="studentLogin.password" type="password" class="w-full p-2 border border-gray-300 rounded" placeholder="password">
+                        </div>
+                        <div class="mb-4">
+                            <button @click="showRegister = true; showLogin = false" class="text-blue-500 text-sm hover:underline">
+                                Don't have an account? Register here
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <div class="flex space-x-4">
+                    <button @click="showLogin = false" class="flex-1 bg-gray-500 text-white py-2 rounded hover:bg-gray-600">
+                        Cancel
+                    </button>
+                    <button @click="login()" class="flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
+                        Login
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Register Modal -->
+        <div x-show="showRegister" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white p-8 rounded-lg max-w-md w-full mx-4">
+                <h2 class="text-2xl font-bold mb-6 text-center">Student Registration</h2>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
+                    <input x-model="registerData.student_id" type="text" class="w-full p-2 border border-gray-300 rounded" placeholder="2024001">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                    <input x-model="registerData.name" type="text" class="w-full p-2 border border-gray-300 rounded" placeholder="John Doe">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input x-model="registerData.email" type="email" class="w-full p-2 border border-gray-300 rounded" placeholder="student@college.edu">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                    <input x-model="registerData.phone" type="text" class="w-full p-2 border border-gray-300 rounded" placeholder="+1234567890">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input x-model="registerData.password" type="password" class="w-full p-2 border border-gray-300 rounded" placeholder="password">
+                </div>
+
+                <div class="flex space-x-4">
+                    <button @click="showRegister = false" class="flex-1 bg-gray-500 text-white py-2 rounded hover:bg-gray-600">
+                        Cancel
+                    </button>
+                    <button @click="register()" class="flex-1 bg-green-500 text-white py-2 rounded hover:bg-green-600">
+                        Register
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="max-w-7xl mx-auto py-8 px-4">
+            <!-- Welcome Section -->
+            <div x-show="!user" class="text-center py-12">
+                <h1 class="text-4xl font-bold text-gray-800 mb-4">Welcome to Campus Events</h1>
+                <p class="text-xl text-gray-600 mb-8">Manage and participate in campus events seamlessly</p>
+                <button @click="showLogin = true" class="bg-blue-500 text-white px-8 py-3 rounded-lg text-lg hover:bg-blue-600">
+                    Get Started
+                </button>
+            </div>
+
+            <!-- Admin Dashboard -->
+            <div x-show="user && user.role === 'admin'" x-cloak>
+                <h2 class="text-3xl font-bold text-gray-800 mb-8">Admin Dashboard</h2>
+                
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow card-hover">
+                        <h3 class="text-lg font-semibold text-gray-700">Total Events</h3>
+                        <p class="text-3xl font-bold text-blue-600" x-text="dashboardStats.total_events || 0"></p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow card-hover">
+                        <h3 class="text-lg font-semibold text-gray-700">Total Students</h3>
+                        <p class="text-3xl font-bold text-green-600" x-text="dashboardStats.total_students || 0"></p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow card-hover">
+                        <h3 class="text-lg font-semibold text-gray-700">Registrations</h3>
+                        <p class="text-3xl font-bold text-purple-600" x-text="dashboardStats.total_registrations || 0"></p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow card-hover">
+                        <h3 class="text-lg font-semibold text-gray-700">Attendance</h3>
+                        <p class="text-3xl font-bold text-orange-600" x-text="dashboardStats.total_attendance || 0"></p>
+                    </div>
+                </div>
+
+                <!-- Top Active Students -->
+                <div class="mb-8">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">🏆 Top 3 Most Active Students</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <template x-for="(student, index) in topActiveStudents" :key="student.id">
+                            <div class="bg-white p-6 rounded-lg shadow card-hover">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                            <span x-text="index + 1"></span>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold text-gray-800" x-text="student.name"></h4>
+                                            <p class="text-sm text-gray-600" x-text="student.student_id"></p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-2xl font-bold text-blue-600" x-text="student.activity_score"></div>
+                                        <div class="text-xs text-gray-500">Activity Score</div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-4 text-center">
+                                    <div>
+                                        <div class="text-lg font-semibold text-green-600" x-text="student.total_registrations"></div>
+                                        <div class="text-xs text-gray-500">Registrations</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-lg font-semibold text-blue-600" x-text="student.total_attendance"></div>
+                                        <div class="text-xs text-gray-500">Attendance</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-lg font-semibold text-purple-600" x-text="student.total_feedback"></div>
+                                        <div class="text-xs text-gray-500">Feedback</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Flexible Reports Section -->
+                <div class="mb-8">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">📊 Event Reports & Analytics</h3>
+                    
+                    <!-- Filter Controls -->
+                    <div class="bg-white p-6 rounded-lg shadow mb-6">
+                        <h4 class="text-lg font-semibold text-gray-700 mb-4">Filter Events</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Event Type</label>
+                                <select x-model="reportFilters.event_type" @change="loadEventReports()" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="all">All Types</option>
+                                    <option value="hackathon">Hackathon</option>
+                                    <option value="workshop">Workshop</option>
+                                    <option value="seminar">Seminar</option>
+                                    <option value="fest">Fest</option>
+                                    <option value="conference">Conference</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                                <input type="date" x-model="reportFilters.start_date" @change="loadEventReports()" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                                <input type="date" x-model="reportFilters.end_date" @change="loadEventReports()" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div class="flex items-end">
+                                <button @click="clearReportFilters()" class="w-full bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">
+                                    Clear Filters
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Event Reports Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <template x-for="event in eventReports" :key="event.id">
+                            <div class="bg-white p-6 rounded-lg shadow card-hover">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="text-lg font-semibold text-gray-800" x-text="event.title"></h4>
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs" x-text="event.event_type"></span>
+                                </div>
+                                <p class="text-gray-600 text-sm mb-4" x-text="event.description"></p>
+                                
+                                <!-- Event Stats -->
+                                <div class="grid grid-cols-2 gap-4 mb-4">
+                                    <div class="text-center p-3 bg-green-50 rounded-lg">
+                                        <div class="text-xl font-bold text-green-600" x-text="event.registration_count"></div>
+                                        <div class="text-xs text-gray-600">Registrations</div>
+                                    </div>
+                                    <div class="text-center p-3 bg-blue-50 rounded-lg">
+                                        <div class="text-xl font-bold text-blue-600" x-text="event.attendance_count"></div>
+                                        <div class="text-xs text-gray-600">Attendance</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-center p-3 bg-purple-50 rounded-lg mb-4">
+                                    <div class="text-lg font-bold text-purple-600" x-text="event.avg_rating + '⭐'"></div>
+                                    <div class="text-xs text-gray-600">Average Rating</div>
+                                </div>
+                                
+                                <div class="text-sm text-gray-600">
+                                    <p>📅 <span x-text="formatDate(event.start_date)"></span></p>
+                                    <p>📍 <span x-text="event.location || 'TBA'"></span></p>
+                                    <p>👥 <span x-text="event.registration_count + '/' + event.max_participants"></span> participants</p>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Create Event Button -->
+                <div class="mb-8">
+                    <button @click="showCreateEvent = true" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600">
+                        + Create New Event
+                    </button>
+                </div>
+
+                <!-- Events List -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <template x-for="event in events" :key="event.id">
+                        <div class="bg-white p-6 rounded-lg shadow card-hover">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2" x-text="event.title"></h3>
+                            <p class="text-gray-600 mb-4" x-text="event.description"></p>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm" x-text="event.event_type"></span>
+                                <span class="text-sm text-gray-500" x-text="formatDate(event.start_date)"></span>
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                <p>📍 <span x-text="event.location || 'TBA'"></span></p>
+                                <p>👥 Max <span x-text="event.max_participants"></span> participants</p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Student Dashboard -->
+            <div x-show="user && user.role === 'student'" x-cloak>
+                <h2 class="text-3xl font-bold text-gray-800 mb-8">Student Dashboard</h2>
+                
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow card-hover">
+                        <h3 class="text-lg font-semibold text-gray-700">My Registrations</h3>
+                        <p class="text-3xl font-bold text-blue-600" x-text="studentData.registrations?.length || 0"></p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow card-hover">
+                        <h3 class="text-lg font-semibold text-gray-700">Events Attended</h3>
+                        <p class="text-3xl font-bold text-green-600" x-text="studentData.attendance?.length || 0"></p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow card-hover">
+                        <h3 class="text-lg font-semibold text-gray-700">Feedback Given</h3>
+                        <p class="text-3xl font-bold text-purple-600" x-text="studentData.feedback?.length || 0"></p>
+                    </div>
+                </div>
+
+                <!-- Event Search & Filter -->
+                <div class="mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-4">🔍 Search & Filter Events</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Search Events</label>
+                                <input type="text" x-model="eventSearch" @input="filterEvents()" placeholder="Search by title or description..." class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Event Type</label>
+                                <select x-model="eventTypeFilter" @change="filterEvents()" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="all">All Types</option>
+                                    <option value="hackathon">Hackathon</option>
+                                    <option value="workshop">Workshop</option>
+                                    <option value="seminar">Seminar</option>
+                                    <option value="fest">Fest</option>
+                                    <option value="conference">Conference</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                                <select x-model="eventSortBy" @change="filterEvents()" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="date">Date (Newest First)</option>
+                                    <option value="date_old">Date (Oldest First)</option>
+                                    <option value="title">Title (A-Z)</option>
+                                    <option value="type">Event Type</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- My Registrations -->
+                <div class="mb-8" x-show="studentData.registrations && studentData.registrations.length > 0">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">📋 My Registrations</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <template x-for="reg in studentData.registrations" :key="reg.event_id">
+                            <div class="bg-white p-6 rounded-lg shadow card-hover border-l-4 border-green-500">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="text-lg font-semibold text-gray-800" x-text="reg.title"></h4>
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Registered</span>
+                                </div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs" x-text="reg.event_type"></span>
+                                    <span class="text-sm text-gray-500" x-text="formatDate(reg.start_date)"></span>
+                                </div>
+                                <div class="text-sm text-gray-600 mb-3">
+                                    <p>📅 Registered: <span x-text="formatDate(reg.registered_at)"></span></p>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-medium" :class="getAttendanceStatus(reg.event_id) === 'present' ? 'text-green-600' : 'text-gray-500'">
+                                        Status: <span x-text="getAttendanceStatus(reg.event_id) === 'present' ? '✅ Present' : '⏳ Pending'"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Available Events -->
+                <div class="mb-8">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">🎯 Available Events</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <template x-for="event in filteredEvents" :key="event.id">
+                            <div class="bg-white p-6 rounded-lg shadow card-hover transform hover:scale-105 transition-all duration-200">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-xl font-semibold text-gray-800" x-text="event.title"></h3>
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs" x-text="event.event_type"></span>
+                                </div>
+                                <p class="text-gray-600 mb-4 text-sm" x-text="event.description"></p>
+                                
+                                <div class="space-y-2 mb-4">
+                                    <div class="flex items-center text-sm text-gray-600">
+                                        <span class="w-4 h-4 mr-2">📅</span>
+                                        <span x-text="formatDate(event.start_date)"></span>
+                                    </div>
+                                    <div class="flex items-center text-sm text-gray-600">
+                                        <span class="w-4 h-4 mr-2">📍</span>
+                                        <span x-text="event.location || 'TBA'"></span>
+                                    </div>
+                                    <div class="flex items-center text-sm text-gray-600">
+                                        <span class="w-4 h-4 mr-2">👥</span>
+                                        <span x-text="'Max ' + event.max_participants + ' participants'"></span>
+                                    </div>
+                                </div>
+                                
+                                <button @click="registerForEvent(event.id)" 
+                                        :disabled="isRegistered(event.id)"
+                                        :class="isRegistered(event.id) ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700'"
+                                        class="w-full text-white py-2 px-4 rounded-lg font-medium transition-all duration-200">
+                                    <span x-text="isRegistered(event.id) ? '✅ Already Registered' : '🚀 Register Now'"></span>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                    
+                    <!-- No Events Message -->
+                    <div x-show="filteredEvents.length === 0" class="text-center py-12">
+                        <div class="text-6xl mb-4">🔍</div>
+                        <h3 class="text-xl font-semibold text-gray-600 mb-2">No Events Found</h3>
+                        <p class="text-gray-500">Try adjusting your search or filter criteria</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Event Modal -->
+        <div x-show="showCreateEvent" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white p-8 rounded-lg max-w-2xl w-full mx-4">
+                <h2 class="text-2xl font-bold mb-6 text-center">Create New Event</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Event Title</label>
+                        <input x-model="newEvent.title" type="text" class="w-full p-2 border border-gray-300 rounded" placeholder="Event Title">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Event Type</label>
+                        <select x-model="newEvent.event_type" class="w-full p-2 border border-gray-300 rounded">
+                            <option value="hackathon">Hackathon</option>
+                            <option value="workshop">Workshop</option>
+                            <option value="fest">Fest</option>
+                            <option value="seminar">Seminar</option>
+                            <option value="conference">Conference</option>
+                            <option value="competition">Competition</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea x-model="newEvent.description" class="w-full p-2 border border-gray-300 rounded" rows="3" placeholder="Event Description"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Start Date & Time</label>
+                        <input x-model="newEvent.start_date" type="datetime-local" class="w-full p-2 border border-gray-300 rounded">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">End Date & Time</label>
+                        <input x-model="newEvent.end_date" type="datetime-local" class="w-full p-2 border border-gray-300 rounded">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                        <input x-model="newEvent.location" type="text" class="w-full p-2 border border-gray-300 rounded" placeholder="Event Location">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Max Participants</label>
+                        <input x-model="newEvent.max_participants" type="number" class="w-full p-2 border border-gray-300 rounded" placeholder="100">
+                    </div>
+                </div>
+
+                <div class="flex space-x-4">
+                    <button @click="showCreateEvent = false" class="flex-1 bg-gray-500 text-white py-2 rounded hover:bg-gray-600">
+                        Cancel
+                    </button>
+                    <button @click="createEvent()" class="flex-1 bg-green-500 text-white py-2 rounded hover:bg-green-600">
+                        Create Event
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function campusEvents() {
+            return {
+                user: null,
+                showLogin: false,
+                showRegister: false,
+                showCreateEvent: false,
+                loginType: 'admin',
+                adminLogin: { username: 'admin', password: 'admin123' },
+                studentLogin: { email: '', password: '' },
+                registerData: { student_id: '', name: '', email: '', phone: '', password: '' },
+                newEvent: { title: '', description: '', event_type: 'hackathon', start_date: '', end_date: '', location: '', max_participants: 100 },
+                events: [],
+                dashboardStats: {},
+                studentData: {},
+                topActiveStudents: [],
+                eventReports: [],
+                reportFilters: { event_type: 'all', start_date: '', end_date: '' },
+                eventSearch: '',
+                eventTypeFilter: 'all',
+                eventSortBy: 'date',
+                filteredEvents: [],
+
+                async init() {
+                    await this.loadEvents();
+                },
+
+                async loadEvents() {
+                    try {
+                        const response = await fetch('http://localhost:5000/api/events');
+                        this.events = await response.json();
+                    } catch (error) {
+                        console.error('Error loading events:', error);
+                    }
+                },
+
+                async login() {
+                    try {
+                        const url = this.loginType === 'admin' ? '/api/auth/admin/login' : '/api/auth/student/login';
+                        const data = this.loginType === 'admin' ? this.adminLogin : this.studentLogin;
+                        
+                        const response = await fetch(`http://localhost:5000${url}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            this.user = result.user;
+                            this.showLogin = false;
+                            
+                            if (this.user.role === 'admin') {
+                                await this.loadDashboard();
+                            } else {
+                                await this.loadStudentData();
+                            }
+                        } else {
+                            alert('Login failed');
+                        }
+                    } catch (error) {
+                        console.error('Login error:', error);
+                        alert('Login failed');
+                    }
+                },
+
+                async register() {
+                    try {
+                        const response = await fetch('http://localhost:5000/api/auth/student/register', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.registerData)
+                        });
+                        
+                        if (response.ok) {
+                            alert('Registration successful! Please login.');
+                            this.showRegister = false;
+                        } else {
+                            const error = await response.json();
+                            alert(error.error || 'Registration failed');
+                        }
+                    } catch (error) {
+                        console.error('Registration error:', error);
+                        alert('Registration failed');
+                    }
+                },
+
+                async loadDashboard() {
+                    try {
+                        const response = await fetch('http://localhost:5000/api/admin/dashboard');
+                        this.dashboardStats = await response.json();
+                        await this.loadTopActiveStudents();
+                        await this.loadEventReports();
+                    } catch (error) {
+                        console.error('Error loading dashboard:', error);
+                    }
+                },
+
+                async loadTopActiveStudents() {
+                    try {
+                        const response = await fetch('http://localhost:5000/api/reports/top-active-students');
+                        this.topActiveStudents = await response.json();
+                    } catch (error) {
+                        console.error('Error loading top active students:', error);
+                    }
+                },
+
+                async loadEventReports() {
+                    try {
+                        const params = new URLSearchParams();
+                        if (this.reportFilters.event_type !== 'all') {
+                            params.append('event_type', this.reportFilters.event_type);
+                        }
+                        if (this.reportFilters.start_date) {
+                            params.append('start_date', this.reportFilters.start_date);
+                        }
+                        if (this.reportFilters.end_date) {
+                            params.append('end_date', this.reportFilters.end_date);
+                        }
+                        
+                        const response = await fetch(`http://localhost:5000/api/reports/events?${params}`);
+                        this.eventReports = await response.json();
+                    } catch (error) {
+                        console.error('Error loading event reports:', error);
+                    }
+                },
+
+                clearReportFilters() {
+                    this.reportFilters = { event_type: 'all', start_date: '', end_date: '' };
+                    this.loadEventReports();
+                },
+
+                async loadStudentData() {
+                    try {
+                        const response = await fetch('http://localhost:5000/api/student/dashboard');
+                        this.studentData = await response.json();
+                        this.filterEvents();
+                    } catch (error) {
+                        console.error('Error loading student data:', error);
+                    }
+                },
+
+                filterEvents() {
+                    let filtered = [...this.events];
+                    
+                    // Search filter
+                    if (this.eventSearch) {
+                        const search = this.eventSearch.toLowerCase();
+                        filtered = filtered.filter(event => 
+                            event.title.toLowerCase().includes(search) || 
+                            event.description.toLowerCase().includes(search)
+                        );
+                    }
+                    
+                    // Type filter
+                    if (this.eventTypeFilter !== 'all') {
+                        filtered = filtered.filter(event => event.event_type === this.eventTypeFilter);
+                    }
+                    
+                    // Sort
+                    filtered.sort((a, b) => {
+                        switch (this.eventSortBy) {
+                            case 'date':
+                                return new Date(b.start_date) - new Date(a.start_date);
+                            case 'date_old':
+                                return new Date(a.start_date) - new Date(b.start_date);
+                            case 'title':
+                                return a.title.localeCompare(b.title);
+                            case 'type':
+                                return a.event_type.localeCompare(b.event_type);
+                            default:
+                                return 0;
+                        }
+                    });
+                    
+                    this.filteredEvents = filtered;
+                },
+
+                isRegistered(eventId) {
+                    if (!this.studentData.registrations) return false;
+                    return this.studentData.registrations.some(reg => reg.event_id === eventId);
+                },
+
+                getAttendanceStatus(eventId) {
+                    if (!this.studentData.attendance) return 'absent';
+                    const attendance = this.studentData.attendance.find(att => att.event_id === eventId);
+                    return attendance ? 'present' : 'absent';
+                },
+
+                async createEvent() {
+                    try {
+                        const response = await fetch('http://localhost:5000/api/events', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.newEvent)
+                        });
+                        
+                        if (response.ok) {
+                            alert('Event created successfully!');
+                            this.showCreateEvent = false;
+                            await this.loadEvents();
+                            await this.loadDashboard();
+                        } else {
+                            alert('Failed to create event');
+                        }
+                    } catch (error) {
+                        console.error('Error creating event:', error);
+                        alert('Failed to create event');
+                    }
+                },
+
+                async registerForEvent(eventId) {
+                    try {
+                        const response = await fetch(`http://localhost:5000/api/events/${eventId}/register`, {
+                            method: 'POST'
+                        });
+                        
+                        if (response.ok) {
+                            alert('Registered successfully!');
+                            await this.loadStudentData();
+                        } else {
+                            const error = await response.json();
+                            alert(error.error || 'Registration failed');
+                        }
+                    } catch (error) {
+                        console.error('Registration error:', error);
+                        alert('Registration failed');
+                    }
+                },
+
+                logout() {
+                    this.user = null;
+                    this.dashboardStats = {};
+                    this.studentData = {};
+                    this.topActiveStudents = [];
+                    this.eventReports = [];
+                    this.reportFilters = { event_type: 'all', start_date: '', end_date: '' };
+                    this.eventSearch = '';
+                    this.eventTypeFilter = 'all';
+                    this.eventSortBy = 'date';
+                    this.filteredEvents = [];
+                },
+
+                formatDate(dateString) {
+                    return new Date(dateString).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>

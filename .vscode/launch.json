@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Campus Event Backend",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/simple_backend_no_qr.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "FLASK_ENV": "development",
+                "FLASK_DEBUG": "1"
+            },
+            "args": [],
+            "justMyCode": true
+        }
+    ]
+}
